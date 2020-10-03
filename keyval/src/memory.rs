@@ -14,32 +14,6 @@ struct MemoryItem<V> {
     data: V,
 }
 
-// #[derive(Debug)]
-// pub enum MemoryError {
-//     NotFound,
-//     Expired,
-// }
-
-// impl From<MemoryError> for Error {
-//     fn from(error: MemoryError) -> Error {
-//         match error {
-//             MemoryError::NotFound => Error::NotFound,
-//             MemoryError::Expired => Error::Expired,
-//         }
-//     }
-// }
-
-// impl fmt::Display for MemoryError {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         match self {
-//             MemoryError::NotFound => write!(f, "Not found"),
-//             MemoryError::Expired => write!(f, "Expired"),
-//         }
-//     }
-// }
-
-// impl StdError for MemoryError {}
-
 pub struct Memory<K, V> {
     db: Arc<Mutex<HashMap<K, MemoryItem<V>>>>,
     _k: PhantomData<K>,
@@ -64,7 +38,7 @@ impl<K, V> Memory<K, V> {
 impl<K, V> Store<K, V> for Memory<K, V>
 where
     K: Eq + std::hash::Hash + Send + Sync,
-    V: Clone + Send + Sync,
+    V: Clone + Send,
 {
     async fn insert(&self, key: K, value: V) -> Result<(), Error> {
         let data = value.clone();
@@ -109,9 +83,9 @@ where
 impl<K, V> TtlStore<K, V> for Memory<K, V>
 where
     K: Eq + std::hash::Hash + Send + Sync,
-    V: Clone + Send + Sync,
+    V: Clone + Send,
 {
-    async fn insert_ttl(&self, key: K, ttl: Ttl, value: &V) -> Result<(), Error> {
+    async fn insert_ttl(&self, key: K, ttl: Ttl, value: V) -> Result<(), Error> {
         let mut lock = self.db.lock().await;
         lock.insert(
             key,
