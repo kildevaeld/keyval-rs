@@ -14,31 +14,31 @@ struct MemoryItem<V> {
     data: V,
 }
 
-#[derive(Debug)]
-pub enum MemoryError {
-    NotFound,
-    Expired,
-}
+// #[derive(Debug)]
+// pub enum MemoryError {
+//     NotFound,
+//     Expired,
+// }
 
-impl From<MemoryError> for Error {
-    fn from(error: MemoryError) -> Error {
-        match error {
-            MemoryError::NotFound => Error::NotFound,
-            MemoryError::Expired => Error::Expired,
-        }
-    }
-}
+// impl From<MemoryError> for Error {
+//     fn from(error: MemoryError) -> Error {
+//         match error {
+//             MemoryError::NotFound => Error::NotFound,
+//             MemoryError::Expired => Error::Expired,
+//         }
+//     }
+// }
 
-impl fmt::Display for MemoryError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            MemoryError::NotFound => write!(f, "Not found"),
-            MemoryError::Expired => write!(f, "Expired"),
-        }
-    }
-}
+// impl fmt::Display for MemoryError {
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         match self {
+//             MemoryError::NotFound => write!(f, "Not found"),
+//             MemoryError::Expired => write!(f, "Expired"),
+//         }
+//     }
+// }
 
-impl StdError for MemoryError {}
+// impl StdError for MemoryError {}
 
 pub struct Memory<K, V> {
     db: Arc<Mutex<HashMap<K, MemoryItem<V>>>>,
@@ -66,15 +66,13 @@ where
     K: Eq + std::hash::Hash + Send + Sync,
     V: Clone + Send + Sync,
 {
-    type Error = MemoryError;
-
-    async fn insert(&self, key: K, value: V) -> Result<(), Self::Error> {
+    async fn insert(&self, key: K, value: V) -> Result<(), Error> {
         let data = value.clone();
         let mut lock = self.db.lock().await;
         lock.insert(key, MemoryItem { ttl: None, data });
         Ok(())
     }
-    async fn get(&self, key: &K) -> Result<V, Self::Error> {
+    async fn get(&self, key: &K) -> Result<V, Error> {
         let mut lock = self.db.lock().await;
         let ret = match lock.get(key) {
             Some(v) => {
@@ -89,18 +87,18 @@ where
                     Some(v.data.clone())
                 }
             }
-            None => return Err(MemoryError::NotFound),
+            None => return Err(Error::NotFound),
         };
 
         match ret {
             Some(s) => Ok(s),
             None => {
                 lock.remove(key);
-                Err(MemoryError::Expired)
+                Err(Error::Expired)
             }
         }
     }
-    async fn remove(&self, key: &K) -> Result<(), Self::Error> {
+    async fn remove(&self, key: &K) -> Result<(), Error> {
         let mut lock = self.db.lock().await;
         lock.remove(key);
         Ok(())
@@ -113,7 +111,7 @@ where
     K: Eq + std::hash::Hash + Send + Sync,
     V: Clone + Send + Sync,
 {
-    async fn insert_ttl(&self, key: K, ttl: Ttl, value: &V) -> Result<(), MemoryError> {
+    async fn insert_ttl(&self, key: K, ttl: Ttl, value: &V) -> Result<(), Error> {
         let mut lock = self.db.lock().await;
         lock.insert(
             key,
@@ -124,14 +122,14 @@ where
         );
         Ok(())
     }
-    async fn touch(&self, key: &K, ttl: Ttl) -> Result<(), MemoryError> {
+    async fn touch(&self, key: &K, ttl: Ttl) -> Result<(), Error> {
         let mut lock = self.db.lock().await;
         match lock.get_mut(key) {
             Some(m) => {
                 m.ttl = Some(ttl);
                 Ok(())
             }
-            None => Err(MemoryError::NotFound),
+            None => Err(Error::NotFound),
         }
     }
 }

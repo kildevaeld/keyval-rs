@@ -64,9 +64,7 @@ where
     K: Clone + 'static + Sync + Send + for<'a> kv::Key<'a>,
     V: 'static + Sync + Send + kv::Value,
 {
-    type Error = KeyValError;
-
-    async fn insert(&self, key: K, value: V) -> Result<(), Self::Error> {
+    async fn insert(&self, key: K, value: V) -> Result<(), KeyValError> {
         let store = self.store.clone();
         runtime::spawn_blocking(move || {
             let bucket = store.bucket::<K, V>(None)?;
@@ -78,7 +76,7 @@ where
         Ok(())
     }
 
-    async fn get(&self, key: &K) -> Result<V, Self::Error> {
+    async fn get(&self, key: &K) -> Result<V, KeyValError> {
         let key = key.clone();
         let store = self.store.clone();
         let ret = runtime::spawn_blocking(move || {
@@ -95,7 +93,7 @@ where
         }
     }
 
-    async fn remove(&self, key: &K) -> Result<(), Self::Error> {
+    async fn remove(&self, key: &K) -> Result<(), KeyValError> {
         let key = key.clone();
         let store = self.store.clone();
         runtime::spawn_blocking(move || {
