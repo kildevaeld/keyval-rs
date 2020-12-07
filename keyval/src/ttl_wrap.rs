@@ -9,7 +9,7 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 use std::time::Instant;
 
-struct TtlWrapItem<V> {
+pub struct TtlWrapItem<V> {
     ttl: Option<Instant>,
     data: V,
 }
