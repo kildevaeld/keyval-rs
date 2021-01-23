@@ -387,7 +387,7 @@ checksum = "41cc0f7e4d5d4544e8861606a285bb08d3e70712ccc7d2b84d7c0ccfaf4b05ce"
 [[package]]
 name = "runtime"
 version = "0.1.0"
-source = "git+https://github.com/kildevaeld/tasks-rs.git#cc278b772b7f22e956ea32b00d1195d654ed5230"
+source = "git+https://github.com/kildevaeld/tasks-rs.git#0fcd8a405dc7e2b506e64841c1a6b7d8fab2d88a"
 dependencies = [
  "futures-core",
  "futures-util",
