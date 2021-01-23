@@ -14,6 +14,7 @@ pub trait Codec<T: serde::Serialize + serde::de::DeserializeOwned>:
 macro_rules! codec {
     ($x:ident) => {
         /// Codec implementation
+        #[derive(Debug)]
         pub struct $x<T: serde::Serialize + serde::de::DeserializeOwned>(pub T);
 
         impl<T: serde::Serialize + serde::de::DeserializeOwned> AsRef<T> for $x<T> {
