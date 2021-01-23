@@ -8,7 +8,7 @@ mod memory;
 pub mod ttl_wrap;
 mod types;
 
-pub use self::{error::*, keyval::*, types::*};
+pub use self::{codec::*, error::*, keyval::*, keyval_ext::*, types::*};
 
 #[cfg(feature = "memory")]
 pub use memory::*;
