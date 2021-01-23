@@ -1,61 +1,43 @@
 use super::error::Error;
-use super::keyval::{Store, Ttl, TtlStore};
-use async_mutex::Mutex;
+use super::types::{Raw, Store, Ttl, TtlStore};
 use async_trait::async_trait;
-use std::collections::HashMap;
-use std::error::Error as StdError;
-use std::fmt;
-use std::marker::PhantomData;
-use std::sync::Arc;
+use serde::{Deserialize, Serialize};
 use std::time::Instant;
 
-pub struct TtlWrapItem<V> {
+#[derive(Serialize, Deserialize)]
+pub struct TtlWrapItem {
+    #[serde(with = "serde_millis")]
     ttl: Option<Instant>,
-    data: V,
+    data: Vec<u8>,
 }
 
-pub struct TtlWrap<S, K, V> {
+pub struct TtlWrap<S> {
     store: S,
-    _k: PhantomData<K>,
-    _v: PhantomData<V>,
 }
 
-unsafe impl<S, K, V> Sync for TtlWrap<S, K, V> where S: Sync {}
-
-unsafe impl<S, K, V> Send for TtlWrap<S, K, V> where S: Send {}
-
-impl<S, K, V> TtlWrap<S, K, V> {
-    pub fn new(store: S) -> TtlWrap<S, K, V> {
-        TtlWrap {
-            store,
-            _k: PhantomData,
-            _v: PhantomData,
-        }
+impl<S> TtlWrap<S> {
+    pub fn new(store: S) -> TtlWrap<S> {
+        TtlWrap { store }
     }
 }
 
 #[async_trait]
-impl<S, K, V> Store<K, V> for TtlWrap<S, K, V>
+impl<S> Store for TtlWrap<S>
 where
-    S: Store<K, TtlWrapItem<V>>,
-    K: Send + Sync,
-    V: Send + Clone,
+    S: Store,
 {
-    async fn insert(&self, key: K, value: V) -> Result<(), Error> {
-        self.store
-            .insert(
-                key,
-                TtlWrapItem {
-                    ttl: None,
-                    data: value,
-                },
-            )
-            .await
+    async fn insert(&self, key: Raw, value: Raw) -> Result<(), Error> {
+        let item = serde_cbor::to_vec(&TtlWrapItem {
+            ttl: None,
+            data: value,
+        })?;
+        self.store.insert(key, item).await
     }
 
-    async fn get(&self, key: &K) -> Result<V, Error> {
+    async fn get(&self, key: &Raw) -> Result<Raw, Error> {
         let ret = match self.store.get(key).await {
             Ok(v) => {
+                let v: TtlWrapItem = serde_cbor::from_slice(&v)?;
                 if let Some(ttl) = v.ttl {
                     let now = Instant::now();
                     if now > ttl {
@@ -78,32 +60,28 @@ where
             }
         }
     }
-    async fn remove(&self, key: &K) -> Result<(), Error> {
+    async fn remove(&self, key: &Raw) -> Result<(), Error> {
         self.store.remove(key).await
     }
 }
 
 #[async_trait]
-impl<S, K, V> TtlStore<K, V> for TtlWrap<S, K, V>
+impl<S> TtlStore for TtlWrap<S>
 where
-    S: Store<K, TtlWrapItem<V>>,
-    K: Send + Sync + Clone,
-    V: Send + Clone,
+    S: Store,
 {
-    async fn insert_ttl(&self, key: K, ttl: Ttl, value: V) -> Result<(), Error> {
-        self.store
-            .insert(
-                key,
-                TtlWrapItem {
-                    ttl: Some(ttl),
-                    data: value,
-                },
-            )
-            .await
+    async fn insert_ttl(&self, key: Raw, ttl: Ttl, value: Raw) -> Result<(), Error> {
+        let item = serde_cbor::to_vec(&TtlWrapItem {
+            ttl: Some(ttl),
+            data: value,
+        })?;
+        self.store.insert(key, item).await
     }
-    async fn touch(&self, key: &K, ttl: Ttl) -> Result<(), Error> {
-        let mut item = self.store.get(key).await?;
+    async fn touch(&self, key: &Raw, ttl: Ttl) -> Result<(), Error> {
+        let item = self.store.get(key).await?;
+        let mut item: TtlWrapItem = serde_cbor::from_slice(&item)?;
         item.ttl = Some(ttl);
+        let item = serde_cbor::to_vec(&item)?;
         self.store.insert(key.clone(), item).await?;
         Ok(())
     }

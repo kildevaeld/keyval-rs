@@ -8,13 +8,19 @@ edition = "2018"
 [dependencies]
 async-trait = "0.1"
 async-mutex = { version = "1", optional = true }
+thiserror = "1"
+serde = { version = "1", features = [ "derive" ] }
+serde_cbor = { version = "0.11", optional = true  }
+serde_millis = { version = "0.1", optional = true }
 
 [dev-dependencies]
-tokio = { version = "0.2", features = [ "macros" ] }
+tokio = { version = "1", features = [ "full" ] }
 
 [features]
-default = [ "memory" ]
+default = [ "memory", "ttlwrap" ]
 memory = [ "async-mutex" ]
+cbor = [ "serde_cbor" ]
+ttlwrap = [ "cbor", "serde_millis" ]
 
 
 [[example]]

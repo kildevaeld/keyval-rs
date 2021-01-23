@@ -1,19 +1,45 @@
-use super::error::Error;
-use async_trait::async_trait;
-use std::marker::PhantomData;
-use std::time::Instant;
+use super::{Error, Key, Store, Ttl, TtlStore, Value};
 
-pub type Ttl = Instant;
+#[derive(Clone)]
+pub struct KeyVal<S>(S);
 
-#[async_trait]
-pub trait Store<K, V>: Send + Sync {
-    async fn insert(&self, key: K, value: V) -> Result<(), Error>;
-    async fn get(&self, key: &K) -> Result<V, Error>;
-    async fn remove(&self, key: &K) -> Result<(), Error>;
+impl<S> KeyVal<S> {
+    pub fn new(store: S) -> KeyVal<S> {
+        KeyVal(store)
+    }
 }
 
-#[async_trait]
-pub trait TtlStore<K, V>: Store<K, V> {
-    async fn insert_ttl(&self, key: K, ttl: Ttl, value: V) -> Result<(), Error>;
-    async fn touch(&self, key: &K, ttl: Ttl) -> Result<(), Error>;
+impl<S> KeyVal<S>
+where
+    S: Store,
+{
+    pub async fn insert<K: Key, V: Value>(&self, key: K, value: V) -> Result<(), Error> {
+        self.0.insert(key.to_raw()?, value.to_raw()?).await
+    }
+
+    pub async fn get<K: Key, V: Value>(&self, key: K) -> Result<V, Error> {
+        let raw = self.0.get(&key.to_raw()?).await?;
+        Ok(V::from_raw(raw)?)
+    }
+
+    pub async fn remove<K: Key>(&self, key: &K) -> Result<(), Error> {
+        self.0.remove(&key.to_raw()?).await
+    }
+}
+
+impl<S> KeyVal<S>
+where
+    S: TtlStore,
+{
+    pub async fn insert_ttl<K: Key, V: Value>(
+        &self,
+        key: K,
+        value: V,
+        ttl: Ttl,
+    ) -> Result<(), Error> {
+        self.0.insert_ttl(key.to_raw()?, ttl, value.to_raw()?).await
+    }
+    pub async fn touch<K: Key, V: Value>(&self, key: K, ttl: Ttl) -> Result<(), Error> {
+        self.0.touch(&key.to_raw()?, ttl).await
+    }
 }

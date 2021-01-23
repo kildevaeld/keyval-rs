@@ -1,52 +1,38 @@
 use super::error::Error;
-use super::keyval::{Store, Ttl, TtlStore};
+use super::types::{Raw, Store, Ttl, TtlStore};
 use async_mutex::Mutex;
 use async_trait::async_trait;
 use std::collections::HashMap;
-use std::error::Error as StdError;
-use std::fmt;
-use std::marker::PhantomData;
 use std::sync::Arc;
 use std::time::Instant;
 
-struct MemoryItem<V> {
+struct MemoryItem {
     ttl: Option<Instant>,
-    data: V,
+    data: Vec<u8>,
 }
 
-pub struct Memory<K, V> {
-    db: Arc<Mutex<HashMap<K, MemoryItem<V>>>>,
-    _k: PhantomData<K>,
-    _v: PhantomData<V>,
+pub struct Memory {
+    db: Arc<Mutex<HashMap<Raw, MemoryItem>>>,
 }
 
-unsafe impl<K, V> Sync for Memory<K, V> {}
-
-unsafe impl<K, V> Send for Memory<K, V> {}
-
-impl<K, V> Memory<K, V> {
-    pub fn new() -> Memory<K, V> {
+impl Memory {
+    pub fn new() -> Memory {
         Memory {
             db: Arc::new(Mutex::new(HashMap::new())),
-            _k: PhantomData,
-            _v: PhantomData,
         }
     }
 }
 
 #[async_trait]
-impl<K, V> Store<K, V> for Memory<K, V>
-where
-    K: Eq + std::hash::Hash + Send + Sync,
-    V: Clone + Send,
-{
-    async fn insert(&self, key: K, value: V) -> Result<(), Error> {
+impl Store for Memory {
+    async fn insert(&self, key: Raw, value: Raw) -> Result<(), Error> {
         let data = value.clone();
         let mut lock = self.db.lock().await;
         lock.insert(key, MemoryItem { ttl: None, data });
         Ok(())
     }
-    async fn get(&self, key: &K) -> Result<V, Error> {
+
+    async fn get(&self, key: &Raw) -> Result<Raw, Error> {
         let mut lock = self.db.lock().await;
         let ret = match lock.get(key) {
             Some(v) => {
@@ -72,7 +58,7 @@ where
             }
         }
     }
-    async fn remove(&self, key: &K) -> Result<(), Error> {
+    async fn remove(&self, key: &Raw) -> Result<(), Error> {
         let mut lock = self.db.lock().await;
         lock.remove(key);
         Ok(())
@@ -80,12 +66,8 @@ where
 }
 
 #[async_trait]
-impl<K, V> TtlStore<K, V> for Memory<K, V>
-where
-    K: Eq + std::hash::Hash + Send + Sync,
-    V: Clone + Send,
-{
-    async fn insert_ttl(&self, key: K, ttl: Ttl, value: V) -> Result<(), Error> {
+impl TtlStore for Memory {
+    async fn insert_ttl(&self, key: Raw, ttl: Ttl, value: Raw) -> Result<(), Error> {
         let mut lock = self.db.lock().await;
         lock.insert(
             key,
@@ -96,7 +78,7 @@ where
         );
         Ok(())
     }
-    async fn touch(&self, key: &K, ttl: Ttl) -> Result<(), Error> {
+    async fn touch(&self, key: &Raw, ttl: Ttl) -> Result<(), Error> {
         let mut lock = self.db.lock().await;
         match lock.get_mut(key) {
             Some(m) => {

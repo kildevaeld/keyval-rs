@@ -1,21 +1,18 @@
-use std::error::Error as StdError;
-use std::fmt;
+use std::str::Utf8Error;
+use std::string::FromUtf8Error;
+use thiserror::Error as ThisError;
 
-#[derive(Debug)]
+#[derive(ThisError, Debug)]
 pub enum Error {
+    #[error("not found")]
     NotFound,
+    #[error("expired")]
     Expired,
-    Backend(Box<dyn StdError + Send>),
+    #[error("parse error")]
+    Utf8(#[from] Utf8Error),
+    #[error("from")]
+    FromUtf8(#[from] FromUtf8Error),
+    #[cfg(feature = "cbor")]
+    #[error("encode error")]
+    Cbor(#[from] serde_cbor::Error),
 }
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Error::Backend(b) => write!(f, "backend error: {}", b),
-            Error::NotFound => write!(f, "not found error"),
-            Error::Expired => write!(f, "expired error"),
-        }
-    }
-}
-
-impl StdError for Error {}

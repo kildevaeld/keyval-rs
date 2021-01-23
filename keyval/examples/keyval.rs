@@ -1,12 +1,12 @@
-use keyval::{Memory, Store};
+use keyval::{KeyVal, Memory, Store};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let store = Memory::new();
+    let store = KeyVal::new(Memory::new());
 
-    store.insert(String::from("key"), 200).await?;
+    store.insert("test", String::from("Hello, World")).await?;
 
-    store.get(&String::from("key")).await?;
+    let value: String = store.get("test").await?;
 
     Ok(())
 }
