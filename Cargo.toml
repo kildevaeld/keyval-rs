@@ -2,5 +2,5 @@
 
 members = [
     "keyval",
-    # "keyval-kv"
+    "keyval-kv"
 ]

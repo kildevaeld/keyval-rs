@@ -1,9 +1,8 @@
 use async_trait::async_trait;
-use keyval::{Error as KeyValError, Store};
+use keyval::{Error as KeyValError, Raw, Store};
 use kv::Store as StoreBackend;
 use std::error::Error as StdError;
 use std::fmt;
-use std::marker::PhantomData;
 
 #[derive(Debug)]
 pub enum Error {
@@ -42,32 +41,22 @@ impl From<kv::Error> for Error {
     }
 }
 
-pub struct KvStore<K, V> {
+pub struct KvStore {
     store: StoreBackend,
-    _k: PhantomData<K>,
-    _v: PhantomData<V>,
 }
 
-impl<K, V> KvStore<K, V> {
-    pub fn new(store: StoreBackend) -> KvStore<K, V> {
-        KvStore {
-            store,
-            _k: PhantomData,
-            _v: PhantomData,
-        }
+impl KvStore {
+    pub fn new(store: StoreBackend) -> KvStore {
+        KvStore { store }
     }
 }
 
 #[async_trait]
-impl<K, V> Store<K, V> for KvStore<K, V>
-where
-    K: Clone + 'static + Sync + Send + for<'a> kv::Key<'a>,
-    V: 'static + Sync + Send + kv::Value,
-{
-    async fn insert(&self, key: K, value: V) -> Result<(), KeyValError> {
+impl Store for KvStore {
+    async fn insert(&self, key: Raw, value: Raw) -> Result<(), KeyValError> {
         let store = self.store.clone();
         runtime::spawn_blocking(move || {
-            let bucket = store.bucket::<K, V>(None)?;
+            let bucket = store.bucket::<Raw, Raw>(None)?;
             bucket.set(key, value)
         })
         .await
@@ -76,11 +65,11 @@ where
         Ok(())
     }
 
-    async fn get(&self, key: &K) -> Result<V, KeyValError> {
+    async fn get(&self, key: &Raw) -> Result<Raw, KeyValError> {
         let key = key.clone();
         let store = self.store.clone();
         let ret = runtime::spawn_blocking(move || {
-            let bucket = store.bucket::<K, V>(None)?;
+            let bucket = store.bucket::<Raw, Raw>(None)?;
             bucket.get(key)
         })
         .await
@@ -93,11 +82,11 @@ where
         }
     }
 
-    async fn remove(&self, key: &K) -> Result<(), KeyValError> {
+    async fn remove(&self, key: &Raw) -> Result<(), KeyValError> {
         let key = key.clone();
         let store = self.store.clone();
         runtime::spawn_blocking(move || {
-            let bucket = store.bucket::<K, V>(None)?;
+            let bucket = store.bucket::<Raw, Raw>(None)?;
             bucket.remove(key)
         })
         .await

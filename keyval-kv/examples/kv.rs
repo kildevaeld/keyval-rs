@@ -6,11 +6,9 @@ use kv::{Config, Store as STORE};
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let store = STORE::new(Config::new("./example.db"))?;
 
-    let store = KvStore::<String, String>::new(store);
+    let store = KvStore::new(store);
 
-    store
-        .insert(String::from("key"), "Hellow".to_owned())
-        .await?;
+    store.insert(b"key".to_vec(), b"Hellow".to_vec()).await?;
 
     Ok(())
 }

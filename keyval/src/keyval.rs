@@ -1,11 +1,12 @@
 use super::{Error, Key, Store, Ttl, TtlStore, Value};
+use std::sync::Arc;
 
 #[derive(Clone)]
-pub struct KeyVal<S>(S);
+pub struct KeyVal<S>(Arc<S>);
 
 impl<S> KeyVal<S> {
     pub fn new(store: S) -> KeyVal<S> {
-        KeyVal(store)
+        KeyVal(Arc::new(store))
     }
 }
 

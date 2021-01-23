@@ -13,5 +13,5 @@ runtime = { git =  "https://github.com/kildevaeld/tasks-rs.git" }
 async-trait = "0.1"
 
 [dev-dependencies]
-tokio = { version = "0.2", features = [ "macros" ] }
+tokio = { version = "1", features = [ "full" ] }
 runtime = { git =  "https://github.com/kildevaeld/tasks-rs.git", features = [ "tokio" ] }
