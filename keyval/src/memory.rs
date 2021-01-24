@@ -1,6 +1,6 @@
 use super::error::Error;
 use super::types::{Raw, Store, Ttl, TtlStore};
-use async_mutex::Mutex;
+use async_rwlock::RwLock;
 use async_trait::async_trait;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -12,13 +12,13 @@ struct MemoryItem {
 }
 
 pub struct Memory {
-    db: Arc<Mutex<HashMap<Raw, MemoryItem>>>,
+    db: Arc<RwLock<HashMap<Raw, MemoryItem>>>,
 }
 
 impl Memory {
     pub fn new() -> Memory {
         Memory {
-            db: Arc::new(Mutex::new(HashMap::new())),
+            db: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 }
@@ -27,13 +27,13 @@ impl Memory {
 impl Store for Memory {
     async fn insert(&self, key: Raw, value: Raw) -> Result<(), Error> {
         let data = value.clone();
-        let mut lock = self.db.lock().await;
+        let mut lock = self.db.write().await;
         lock.insert(key, MemoryItem { ttl: None, data });
         Ok(())
     }
 
     async fn get(&self, key: &Raw) -> Result<Raw, Error> {
-        let mut lock = self.db.lock().await;
+        let lock = self.db.read().await;
         let ret = match lock.get(key) {
             Some(v) => {
                 if let Some(ttl) = v.ttl {
@@ -53,13 +53,13 @@ impl Store for Memory {
         match ret {
             Some(s) => Ok(s),
             None => {
-                lock.remove(key);
+                // lock.remove(key);
                 Err(Error::Expired)
             }
         }
     }
     async fn remove(&self, key: &Raw) -> Result<(), Error> {
-        let mut lock = self.db.lock().await;
+        let mut lock = self.db.write().await;
         lock.remove(key);
         Ok(())
     }
@@ -68,7 +68,7 @@ impl Store for Memory {
 #[async_trait]
 impl TtlStore for Memory {
     async fn insert_ttl(&self, key: Raw, ttl: Ttl, value: Raw) -> Result<(), Error> {
-        let mut lock = self.db.lock().await;
+        let mut lock = self.db.write().await;
         lock.insert(
             key,
             MemoryItem {
@@ -79,7 +79,7 @@ impl TtlStore for Memory {
         Ok(())
     }
     async fn touch(&self, key: &Raw, ttl: Ttl) -> Result<(), Error> {
-        let mut lock = self.db.lock().await;
+        let mut lock = self.db.write().await;
         match lock.get_mut(key) {
             Some(m) => {
                 m.ttl = Some(ttl);

@@ -10,6 +10,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-rwlock"
+version = "1.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "261803dcc39ba9e72760ba6e16d0199b1eef9fc44e81bffabbebb9f5aea3906c"
+dependencies = [
+ "async-mutex",
+ "event-listener",
+]
+
+[[package]]
 name = "async-trait"
 version = "0.1.42"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -186,7 +196,7 @@ dependencies = [
 name = "keyval"
 version = "0.2.0"
 dependencies = [
- "async-mutex",
+ "async-rwlock",
  "async-trait",
  "serde",
  "serde_cbor",
