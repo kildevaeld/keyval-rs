@@ -32,6 +32,42 @@ pub trait TtlStore: Store {
     async fn touch(&self, key: &Raw, ttl: Ttl) -> Result<(), Error>;
 }
 
+#[async_trait]
+impl Store for Box<dyn Store> {
+    async fn insert(&self, key: Raw, value: Raw) -> Result<(), Error> {
+        self.as_ref().insert(key, value).await
+    }
+    async fn get(&self, key: &Raw) -> Result<Raw, Error> {
+        self.as_ref().get(key).await
+    }
+    async fn remove(&self, key: &Raw) -> Result<(), Error> {
+        self.as_ref().remove(key).await
+    }
+}
+
+#[async_trait]
+impl Store for Box<dyn TtlStore> {
+    async fn insert(&self, key: Raw, value: Raw) -> Result<(), Error> {
+        self.as_ref().insert(key, value).await
+    }
+    async fn get(&self, key: &Raw) -> Result<Raw, Error> {
+        self.as_ref().get(key).await
+    }
+    async fn remove(&self, key: &Raw) -> Result<(), Error> {
+        self.as_ref().remove(key).await
+    }
+}
+
+#[async_trait]
+impl TtlStore for Box<dyn TtlStore> {
+    async fn insert_ttl(&self, key: Raw, ttl: Ttl, value: Raw) -> Result<(), Error> {
+        self.as_ref().insert_ttl(key, ttl, value).await
+    }
+    async fn touch(&self, key: &Raw, ttl: Ttl) -> Result<(), Error> {
+        self.as_ref().touch(key, ttl).await
+    }
+}
+
 impl<'a> Key for &'a [u8] {}
 
 impl<'a> Key for &'a str {}
