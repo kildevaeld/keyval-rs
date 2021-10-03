@@ -81,7 +81,7 @@ impl Key for Integer {}
 
 /// Integer key type
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
-pub struct Integer([u8; 16]);
+pub struct Integer(pub(crate) [u8; 16]);
 
 impl From<u128> for Integer {
     fn from(i: u128) -> Integer {
@@ -89,33 +89,33 @@ impl From<u128> for Integer {
     }
 }
 
-impl From<u64> for Integer {
-    fn from(i: u64) -> Integer {
-        let i = i as u128;
-        i.into()
-    }
-}
+// impl From<u64> for Integer {
+//     fn from(i: u64) -> Integer {
+//         let i = i as u128;
+//         i.into()
+//     }
+// }
 
-impl From<u32> for Integer {
-    fn from(i: u32) -> Integer {
-        let i = i as u128;
-        i.into()
-    }
-}
+// impl From<u32> for Integer {
+//     fn from(i: u32) -> Integer {
+//         let i = i as u128;
+//         i.into()
+//     }
+// }
 
-impl From<i32> for Integer {
-    fn from(i: i32) -> Integer {
-        let i = i as u128;
-        i.into()
-    }
-}
+// impl From<i32> for Integer {
+//     fn from(i: i32) -> Integer {
+//         let i = i as u128;
+//         i.into()
+//     }
+// }
 
-impl From<usize> for Integer {
-    fn from(i: usize) -> Integer {
-        let i = i as u128;
-        i.into()
-    }
-}
+// impl From<usize> for Integer {
+//     fn from(i: usize) -> Integer {
+//         let i = i as u128;
+//         i.into()
+//     }
+// }
 
 impl From<Integer> for u128 {
     #[cfg(target_endian = "big")]
@@ -126,20 +126,6 @@ impl From<Integer> for u128 {
     #[cfg(target_endian = "little")]
     fn from(i: Integer) -> u128 {
         u128::from_be(unsafe { std::mem::transmute(i.0) })
-    }
-}
-
-impl From<Integer> for u64 {
-    fn from(i: Integer) -> u64 {
-        let i: u128 = i.into();
-        i as u64
-    }
-}
-
-impl From<Integer> for usize {
-    fn from(i: Integer) -> usize {
-        let i: u128 = i.into();
-        i as usize
     }
 }
 
@@ -156,20 +142,6 @@ impl<'a> From<&'a [u8]> for Integer {
         dst
     }
 }
-
-// impl Integer {
-//     /// Current timestamp in seconds from the Unix epoch
-//     pub fn timestamp() -> Result<Integer, Error> {
-//         let ts = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?;
-//         Ok(Integer::from(ts.as_secs() as u128))
-//     }
-
-//     /// Current timestamp in milliseconds from the Unix epoch
-//     pub fn timestamp_ms() -> Result<Integer, Error> {
-//         let ts = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?;
-//         Ok(Integer::from(ts.as_millis()))
-//     }
-// }
 
 impl Value for String {
     fn to_raw(self) -> Result<Raw, Error> {
@@ -188,7 +160,43 @@ impl Value for Vec<u8> {
     }
 
     fn from_raw(r: Raw) -> Result<Self, Error> {
-        // let x = r.to_vec();
         Ok(r)
     }
 }
+
+macro_rules! impl_ints {
+    ($ty: ty) => {
+        impl From<$ty> for Integer {
+            fn from(i: $ty) -> Integer {
+                Integer::from(i as u128)
+            }
+        }
+
+        impl From<Integer> for $ty {
+            fn from(i: Integer) -> $ty {
+                u128::from(i) as $ty
+            }
+        }
+
+        impl Value for $ty {
+            fn to_raw(self) -> Result<Raw, Error> {
+                let i = Integer::from(self);
+                Ok(i.as_ref().to_vec())
+            }
+            fn from_raw(r: Raw) -> Result<Self, Error> {
+                let i = Integer::from(r.as_ref());
+                Ok(i.into())
+            }
+        }
+    };
+}
+
+impl_ints!(usize);
+impl_ints!(i64);
+impl_ints!(u64);
+impl_ints!(i32);
+impl_ints!(u32);
+impl_ints!(i16);
+impl_ints!(u16);
+impl_ints!(u8);
+impl_ints!(i8);
