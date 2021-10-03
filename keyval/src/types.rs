@@ -14,6 +14,15 @@ pub trait Key: Sized + AsRef<[u8]> {
     }
 }
 
+impl<'a, K> Key for &'a K
+where
+    K: Key,
+{
+    fn to_raw(&self) -> Result<Raw, Error> {
+        (&**self).to_raw()
+    }
+}
+
 pub trait Value: Sized {
     fn to_raw(self) -> Result<Raw, Error>;
     fn from_raw(r: Raw) -> Result<Self, Error>;
