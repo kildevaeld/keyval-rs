@@ -12,3 +12,7 @@ pub use self::{codec::*, error::*, keyval::*, keyval_ext::*, types::*};
 
 #[cfg(feature = "memory")]
 pub use memory::*;
+
+pub mod prelude {
+    pub use super::{Store, StoreExt, TtlStore};
+}

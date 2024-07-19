@@ -8,7 +8,7 @@ use std::fmt;
 pub enum Error {
     NotFound,
     Kv(kv::Error),
-    SpawnError(runtime::SpawnError),
+    SpawnError(tokio::task::JoinError),
 }
 
 impl From<Error> for KeyValError {
@@ -29,8 +29,8 @@ impl fmt::Display for Error {
 
 impl StdError for Error {}
 
-impl From<runtime::SpawnError> for Error {
-    fn from(error: runtime::SpawnError) -> Self {
+impl From<tokio::task::JoinError> for Error {
+    fn from(error: tokio::task::JoinError) -> Self {
         Error::SpawnError(error)
     }
 }
@@ -55,9 +55,9 @@ impl KvStore {
 impl Store for KvStore {
     async fn insert(&self, key: Raw, value: Raw) -> Result<(), KeyValError> {
         let store = self.store.clone();
-        runtime::spawn_blocking(move || {
+        tokio::task::spawn_blocking(move || {
             let bucket = store.bucket::<Raw, Raw>(None)?;
-            bucket.set(key, value)
+            bucket.set(&key, &value)
         })
         .await
         .map_err(Error::SpawnError)?
@@ -68,9 +68,9 @@ impl Store for KvStore {
     async fn get(&self, key: &Raw) -> Result<Raw, KeyValError> {
         let key = key.clone();
         let store = self.store.clone();
-        let ret = runtime::spawn_blocking(move || {
+        let ret = tokio::task::spawn_blocking(move || {
             let bucket = store.bucket::<Raw, Raw>(None)?;
-            bucket.get(key)
+            bucket.get(&key)
         })
         .await
         .map_err(Error::SpawnError)?
@@ -85,9 +85,9 @@ impl Store for KvStore {
     async fn remove(&self, key: &Raw) -> Result<(), KeyValError> {
         let key = key.clone();
         let store = self.store.clone();
-        runtime::spawn_blocking(move || {
+        tokio::task::spawn_blocking(move || {
             let bucket = store.bucket::<Raw, Raw>(None)?;
-            bucket.remove(key)
+            bucket.remove(&key)
         })
         .await
         .map_err(Error::SpawnError)?

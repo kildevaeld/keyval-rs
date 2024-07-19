@@ -15,4 +15,7 @@ pub enum Error {
     #[cfg(feature = "cbor")]
     #[error("encode error")]
     Cbor(#[from] serde_cbor::Error),
+    #[cfg(feature = "json")]
+    #[error("encode error")]
+    Json(#[from] serde_json::Error),
 }

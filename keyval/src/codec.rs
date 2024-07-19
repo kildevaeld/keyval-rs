@@ -67,3 +67,12 @@ mod cbor_value {
 
 #[cfg(feature = "cbor")]
 pub use cbor_value::*;
+
+#[cfg(feature = "json")]
+mod json_value {
+    use super::*;
+    codec!(Json, { serde_json::to_vec, serde_json::from_slice});
+}
+
+#[cfg(feature = "json")]
+pub use json_value::*;

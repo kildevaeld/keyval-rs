@@ -9,21 +9,23 @@ edition = "2018"
 async-trait = "0.1"
 async-rwlock = { version = "1", optional = true }
 thiserror = "1"
-serde = { version = "1", features = [ "derive" ] }
-serde_cbor = { version = "0.11", optional = true  }
+serde = { version = "1", features = ["derive"] }
+serde_cbor = { version = "0.11", optional = true }
+serde_json = { version = "1", optional = true }
 serde_millis = { version = "0.1", optional = true }
 
 [dev-dependencies]
-tokio = { version = "1", features = [ "full" ] }
+tokio = { version = "1", features = ["full"] }
 
 [features]
-default = [ "memory", "ttlwrap" ]
-memory = [ "async-rwlock" ]
-cbor = [ "serde_cbor" ]
-ttlwrap = [ "cbor", "serde_millis" ]
+default = ["memory", "ttlwrap", "json"]
+memory = ["async-rwlock"]
+cbor = ["serde_cbor"]
+json = ["serde_json"]
+ttlwrap = ["cbor", "serde_millis"]
 
 
 [[example]]
 name = "keyval"
 path = "examples/keyval.rs"
-required-features = [ "memory" ]
+required-features = ["memory"]
