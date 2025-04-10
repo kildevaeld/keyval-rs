@@ -86,6 +86,13 @@ impl Key for Vec<u8> {}
 impl Key for String {}
 
 impl Key for Integer {}
+
+#[cfg(feature = "bytes")]
+impl Key for bytes::Bytes {}
+
+#[cfg(feature = "bytes")]
+impl Key for bytes::BytesMut {}
+
 // Integer
 
 /// Integer key type
@@ -170,6 +177,17 @@ impl Value for Vec<u8> {
 
     fn from_raw(r: Raw) -> Result<Self, Error> {
         Ok(r)
+    }
+}
+
+#[cfg(feature = "bytes")]
+impl Value for bytes::Bytes {
+    fn to_raw(self) -> Result<Raw, Error> {
+        Ok(self.to_vec())
+    }
+
+    fn from_raw(r: Raw) -> Result<Self, Error> {
+        Ok(r.into())
     }
 }
 
