@@ -23,6 +23,14 @@ pub struct SharedStore<T> {
     inner: Arc<T>,
 }
 
+impl<T> Clone for SharedStore<T> {
+    fn clone(&self) -> Self {
+        SharedStore {
+            inner: self.inner.clone(),
+        }
+    }
+}
+
 #[async_trait]
 impl<T> Store for SharedStore<T>
 where
