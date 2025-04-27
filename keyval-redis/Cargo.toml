@@ -1,0 +1,7 @@
+[package]
+name = "keyval-redis"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+redis = { version = "0.30", features = ["tokio-comp"] }

@@ -3,4 +3,4 @@
 members = [
     "keyval",
     "keyval-kv"
-]
+, "keyval-redis"]
