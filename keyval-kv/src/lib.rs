@@ -4,6 +4,8 @@ use kv::Store as StoreBackend;
 use std::error::Error as StdError;
 use std::fmt;
 
+pub use kv;
+
 #[derive(Debug)]
 pub enum Error {
     NotFound,
